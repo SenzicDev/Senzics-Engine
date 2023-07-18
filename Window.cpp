@@ -3,9 +3,10 @@
 // Registers a new window class then creates and shows the main window
 Window::Window(WNDCLASSEXW wc)
 {
-	this->hInst = wc.hInstance;
-	this->className = wc.lpszClassName;
-	this->wndProcPtr = reinterpret_cast<LRESULT (CALLBACK*)(HWND, UINT, WPARAM, LPARAM)>(wc.lpfnWndProc);
+	hInst = wc.hInstance;
+	className = wc.lpszClassName;
+	wndProcPtr = reinterpret_cast<LRESULT (CALLBACK*)(HWND, UINT, WPARAM, LPARAM)>(wc.lpfnWndProc);
+
 
 	// Register Class
 	wc.lpfnWndProc = InstallCustomWndProc;
@@ -31,21 +32,26 @@ Window::~Window()
 	UnregisterClassW(className, hInst);
 }
 
-LRESULT Window::InstallCustomWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+// Setup to use the custom WndProc later on
+LRESULT CALLBACK Window::InstallCustomWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
 	if (uMsg == WM_NCCREATE)
 	{
+		// Grabs a pointer to the Window instance
 		const CREATESTRUCTW* const pCreate = reinterpret_cast<CREATESTRUCTW*>(lParam);
 		Window* const pWnd = static_cast<Window*>(pCreate->lpCreateParams);
+		// Stores the instance pointer in a custom user data field for later use
 		SetWindowLongW(hWnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(pWnd));
 		SetWindowLongW(hWnd, GWLP_WNDPROC, reinterpret_cast<LONG_PTR>(&Window::WndProcProxy));
+		// Run custom WndProc
 		return pWnd->WndProc(hWnd, uMsg, wParam, lParam);
 	}
 
 	return DefWindowProcW(hWnd, uMsg, wParam, lParam);
 }
 
-LRESULT Window::WndProcProxy(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+// Gets the instance pointer in order to run a custom WndProc
+LRESULT CALLBACK Window::WndProcProxy(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
 	Window* const pWnd = reinterpret_cast<Window*>(GetWindowLongW(hWnd, GWLP_USERDATA));
 	return pWnd->WndProc(hWnd, uMsg, wParam, lParam);
