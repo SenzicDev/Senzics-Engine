@@ -1,7 +1,0 @@
-#include <d3d11.h>
-
-void Triangle()
-{
-	
-
-}
