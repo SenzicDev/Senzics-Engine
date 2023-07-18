@@ -11,10 +11,11 @@ private:
 	HINSTANCE hInst;
 	LPCWSTR className;
 	HWND hWnd;
-
 	static LRESULT CALLBACK InstallCustomWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 	static LRESULT CALLBACK WndProcProxy(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 	LRESULT (*wndProcPtr)(HWND, UINT, WPARAM, LPARAM);
+
+	LRESULT WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
 public:
 	Window(WNDCLASSEXW wc);
@@ -22,5 +23,4 @@ public:
 	Window(const Window&) = delete;
 	Window& operator=(const Window&) = delete;
 
-	LRESULT WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 };
