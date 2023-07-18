@@ -5,7 +5,7 @@ Window::Window(WNDCLASSEXW wc)
 {
 	this->hInst = wc.hInstance;
 	this->className = wc.lpszClassName;
-	this->wndProcPtr = reinterpret_cast<LRESULT (*)(HWND, UINT, WPARAM, LPARAM)>(wc.lpfnWndProc);
+	this->wndProcPtr = reinterpret_cast<LRESULT (CALLBACK*)(HWND, UINT, WPARAM, LPARAM)>(wc.lpfnWndProc);
 
 	// Register Class
 	wc.lpfnWndProc = InstallCustomWndProc;
