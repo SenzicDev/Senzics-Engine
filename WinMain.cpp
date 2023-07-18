@@ -1,4 +1,5 @@
 #include "WinDefine.h"
+#include "Window.h"
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
@@ -21,33 +22,20 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 int CALLBACK WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPSTR lpCmdLine, _In_ int nCmdShow)
 {
-	const LPCWSTR CLASS_NAME = L"Main Window Class";
-	
-	// Register Windows Class
 	WNDCLASSEXW wc = {};
-	wc.cbSize			= sizeof(WNDCLASSEXW);
-	wc.style			= CS_OWNDC;
-	wc.lpfnWndProc		= WndProc;
-	wc.cbClsExtra		= 0;
-	wc.cbWndExtra		= 0;
-	wc.hInstance		= hInstance;
-	wc.hIcon			= 0;
-	wc.hCursor			= 0;
-	wc.hbrBackground	= 0;
-	wc.lpszMenuName		= 0;
-	wc.lpszClassName	= CLASS_NAME;
-	wc.hIconSm			= 0;
-	RegisterClassExW(&wc);
-
-	// Create Window
-	HWND hWnd = CreateWindowExW(
-		0,
-		CLASS_NAME, L"Senzic's Engine", WS_OVERLAPPEDWINDOW,
-		CW_USEDEFAULT, CW_USEDEFAULT, 800, 600,
-		0, 0, hInstance, 0
-	);
-
-	ShowWindow(hWnd, SW_SHOW);
+	wc.cbSize = sizeof(WNDCLASSEXW);
+	wc.style = 0;
+	wc.lpfnWndProc = nullptr;
+	wc.cbClsExtra = 0;
+	wc.cbWndExtra = 0;
+	wc.hInstance = hInstance;
+	wc.hIcon = 0;
+	wc.hCursor = 0;
+	wc.hbrBackground = 0;
+	wc.lpszMenuName = 0;
+	wc.lpszClassName = L"Main Window Class";
+	wc.hIconSm = 0;
+	Window myWindow(wc);
 
 	// Message Loop
 	MSG uMsg;
