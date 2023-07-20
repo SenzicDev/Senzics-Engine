@@ -1,83 +1,109 @@
+#include "WinDefine.h"
 #include "Window.h"
 
-// Registers a new window class then creates and shows the main window
-Window::Window(WNDCLASSEXW wc)
+namespace SZE
 {
-	hInst = wc.hInstance;
-	className = wc.lpszClassName;
-	wndProcPtr = reinterpret_cast<LRESULT (CALLBACK*)(HWND, UINT, WPARAM, LPARAM)>(wc.lpfnWndProc);
+	unsigned int Window::registeredClassCount = 0;
 
+	Window::Window() : Window::Window(nullptr){}
 
-	// Register Class
-	wc.lpfnWndProc = InstallCustomWndProc;
-	RegisterClassExW(&wc);
-
-	// Create Main Window
-	hWnd = CreateWindowExW(
-		0,
-		className,
-		L"Senzic's Engine",
-		WS_OVERLAPPEDWINDOW,
-		CW_USEDEFAULT, CW_USEDEFAULT, 800, 600,
-		0, 0, hInst, this
-	);
-
-	ShowWindow(hWnd, SW_SHOW);
-}
-
-// Unregisters the window class
-// !!!Make sure this runs before DefWinProc handles WM_QUIT!!!
-Window::~Window()
-{
-	UnregisterClassW(className, hInst);
-}
-
-// Setup to use the custom WndProc later on
-LRESULT CALLBACK Window::InstallCustomWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
-{
-	if (uMsg == WM_NCCREATE)
+	Window::Window(WNDPROC WndCallProc)
+		: hInst(GetModuleHandleW(nullptr))
 	{
-		// Grabs a pointer to the Window instance
-		const CREATESTRUCTW* const pCreate = reinterpret_cast<CREATESTRUCTW*>(lParam);
-		Window* const pWnd = static_cast<Window*>(pCreate->lpCreateParams);
-		// Stores the instance pointer in a custom user data field for later use
-		SetWindowLongW(hWnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(pWnd));
-		SetWindowLongW(hWnd, GWLP_WNDPROC, reinterpret_cast<LONG_PTR>(&Window::WndProcProxy));
-		// Run custom WndProc
-		return pWnd->WndProc(hWnd, uMsg, wParam, lParam);
+		Window::registeredClassCount++;
+		className = (LPCWSTR)("SZE Window Class " + Window::registeredClassCount);
+
+		if (WndCallProc == nullptr)
+			WndCallProc = WndProcProxy;
+
+		WNDCLASSEXW wc = {};
+		wc.cbSize			= sizeof(WNDCLASSEXW);
+		wc.style			= 0;
+		wc.lpfnWndProc		= WndCallProc;
+		wc.cbClsExtra		= 0;
+		wc.cbWndExtra		= 0;
+		wc.hInstance		= hInst;
+		wc.hIcon			= 0;
+		wc.hCursor			= 0;
+		wc.hbrBackground	= 0;
+		wc.lpszMenuName		= 0;
+		wc.lpszClassName	= className;
+		wc.hIconSm			= 0;
+		RegisterClassExW(&wc);
 	}
 
-	return DefWindowProcW(hWnd, uMsg, wParam, lParam);
-}
-
-// Gets the instance pointer in order to run a custom WndProc
-LRESULT CALLBACK Window::WndProcProxy(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
-{
-	Window* const pWnd = reinterpret_cast<Window*>(GetWindowLongW(hWnd, GWLP_USERDATA));
-	return pWnd->WndProc(hWnd, uMsg, wParam, lParam);
-}
-
-LRESULT Window::WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
-{
-	if (wndProcPtr != nullptr)
+	Window::Window(const WNDCLASSEXW& wc)
+		: hInst(GetModuleHandleW(nullptr))
 	{
-		return wndProcPtr(hWnd, uMsg, wParam, lParam);
+		Window::registeredClassCount++;
+		const char* cn = "SZE Window Class " + Window::registeredClassCount;
+		RegisterClassExW(&wc);
 	}
 
-	switch (uMsg)
+	Window::~Window()
 	{
-	case WM_CLOSE:
-		PostQuitMessage(0);
-		return 0;
-		break;
+		UnregisterClassW(className, hInst);
+	}
 
-	case WM_SETCURSOR:
-		if (LOWORD(lParam) == HTCLIENT)
+	void Window::NewWindow(int posX = 0, int posY = 0, int width = 960, int height = 540, DWORD styles = WS_OVERLAPPEDWINDOW)
+	{
+		CreateWindowExW(
+			0,
+			className,
+			L"Senzic's Engine",
+			WS_OVERLAPPEDWINDOW,
+			posX, posY, width, height,
+			hWnd,
+			0,
+			hInst,
+			this
+		);
+
+		SetWindowLongPtrW(hWnd, GWLP_USERDATA, (LONG)this);
+
+		ShowWindow(hWnd, SW_SHOWNORMAL);
+	}
+
+	bool Window::ProcessMessages()
+	{
+		MSG msg;
+		while (PeekMessageW(&msg, hWnd, 0, 0, PM_REMOVE))
 		{
-			SetCursor(LoadCursorW(0, IDC_ARROW));
+			TranslateMessage(&msg);
+			DispatchMessageW(&msg);
+			if (msg.message == WM_QUIT)
+			{
+				return false;
+			}
 		}
-		break;
+		return true;
 	}
 
-	return DefWindowProc(hWnd, uMsg, wParam, lParam);
+	LRESULT CALLBACK Window::WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+	{
+		switch (uMsg)
+		{
+		case WM_QUIT:
+			return 0;
+
+		case WM_DESTROY:
+		case WM_CLOSE:
+			PostQuitMessage(0);
+			return 0;
+
+		case WM_SETCURSOR:
+			if (LOWORD(lParam) == HTCLIENT)
+			{
+				SetCursor(LoadCursorW(hInst, IDC_ARROW));
+			}
+			break;
+		}
+
+		return DefWindowProcW(hWnd, uMsg, wParam, lParam);
+	}
+
+	LRESULT CALLBACK Window::WndProcProxy(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+	{
+		reinterpret_cast<Window*>(GetWindowLongPtrW(hWnd, GWLP_USERDATA))->WndProc(hWnd, uMsg, wParam, lParam);
+	}
 }
